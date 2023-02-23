@@ -22,52 +22,38 @@
 
 static volatile int the_counter;
 
-/*
- * ********************************************************************
- * INSERT ANY GLOBAL VARIABLES YOU REQUIRE HERE
- * ********************************************************************
- */
+
+struct semaphore *counter_mutex;
 
 
 void counter_increment(void)
 {
-        the_counter = the_counter + 1;
+        P(counter_mutex);
+        the_counter += 1;
+        V(counter_mutex);
 }
 
 void counter_decrement(void)
 {
-        the_counter = the_counter - 1;
+        P(counter_mutex);
+        the_counter -= 1;
+        V(counter_mutex);
 }
 
 int counter_initialise(int val)
 {
+        counter_mutex = sem_create("counter", 1);
+        if (counter_mutex == NULL) return ENOMEM;
+        P(counter_mutex);
         the_counter = val;
-
-        /*
-         * ********************************************************************
-         * INSERT ANY INITIALISATION CODE YOU REQUIRE HERE
-         * ********************************************************************
-         */
-        
-        
-        /*
-         * Return 0 to indicate success
-         * Return non-zero to indicate error.
-         * e.g. 
-         * return ENOMEM
-         * indicates an allocation failure to the caller 
-         */
-        
+        V(counter_mutex);
         return 0;
 }
 
 int counter_read_and_destroy(void)
 {
-        /*
-         * **********************************************************************
-         * INSERT ANY CLEANUP CODE YOU REQUIRE HERE
-         * **********************************************************************
-         */
-
-        return the_counter;
+        P(counter_mutex);
+        int sto = the_counter;
+        sem_destroy(counter_mutex);
+        return sto;
 }
