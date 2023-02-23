@@ -9,7 +9,8 @@
 /********************************************************************************
  Document your resource order here. 
 ********************************************************************************/
-
+// Lock A - 1
+// Lock B - 2
 
 
 /* declare (local to this file) pointers to the synch variables that
@@ -48,9 +49,9 @@ static void bill(void * unusedpointer, unsigned long unusedint)
                                          what ever bill needs to do while holding
                                          the locks */
                 holds_locka_and_b();
-                
-                lock_release(lockb);
+
                 lock_release(locka);
+                lock_release(lockb);
         }
 
         kprintf("Bill says 'bye'\n");
@@ -97,8 +98,8 @@ static void ben(void * unusedpointer, unsigned long unusedint)
                 
                 lock_release(locka);
 
-                lock_acquire(lockb);
                 lock_acquire(locka);
+                lock_acquire(lockb);
 
                                         /* Ben now holds both locks and can do
                                          what ever ben needs to do while holding
