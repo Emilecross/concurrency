@@ -16,8 +16,10 @@
  * ********************************************************************
  */
 
-
-
+struct cv *wait_empty;
+struct cv *wait_cook;
+struct lock *pot_lock;
+volatile int count;
 /*
  * initialise_kitchen: 
  *
@@ -32,6 +34,13 @@
 
 int initialise_kitchen()
 {
+        wait_empty = cv_create("wait_empty");
+        wait_cook = cv_create("wait_cook");
+        pot_lock = lock_create("pot_lock");
+        if (!(wait_empty != NULL && wait_cook != NULL && pot_lock != NULL)) {
+                panic("No space");
+        }
+        count = 0;
         return 0;
 }
 
@@ -46,7 +55,9 @@ int initialise_kitchen()
 
 void cleanup_kitchen()
 {
-        
+        cv_destroy(wait_empty);
+        cv_destroy(wait_cook);
+        lock_destroy(pot_lock);
 }
 
 
@@ -65,8 +76,14 @@ void cleanup_kitchen()
 
 void do_cooking()
 {
-
+        lock_acquire(pot_lock);
+        while (count > 0) {
+                cv_wait(wait_empty, pot_lock);
+        }
         cook_soup_in_pot();
+        count += POTSIZE_IN_SERVES;
+        cv_broadcast(wait_cook, pot_lock);
+        lock_release(pot_lock);
 }
 
 /*
@@ -88,5 +105,14 @@ void do_cooking()
 
 void fill_bowl()
 {
+        lock_acquire(pot_lock);
+        while (count == 0) {
+                cv_wait(wait_cook, pot_lock);
+        }
         get_serving_from_pot();
+        count--;
+        if (count == 0) {
+                cv_signal(wait_empty, pot_lock);
+        }
+        lock_release(pot_lock);
 }
