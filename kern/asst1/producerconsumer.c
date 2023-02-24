@@ -72,7 +72,7 @@ void producerconsumer_startup(void)
         filled = sem_create("filled", 0);
         empty = sem_create("empty", BUFFER_SIZE);
         mtx = sem_create("mtx", 1);
-        if (!(filled != NULL && empty != NULL && mtx != NULL)) {
+        if (filled == NULL || empty == NULL || mtx == NULL) {
                 panic("No space");
         }
         P(mtx);

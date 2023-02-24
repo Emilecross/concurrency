@@ -37,8 +37,8 @@ int initialise_kitchen()
         wait_empty = cv_create("wait_empty");
         wait_cook = cv_create("wait_cook");
         pot_lock = lock_create("pot_lock");
-        if (!(wait_empty != NULL && wait_cook != NULL && pot_lock != NULL)) {
-                panic("No space");
+        if (wait_empty == NULL || wait_cook == NULL || pot_lock == NULL) {
+                return -1;
         }
         count = 0;
         return 0;
