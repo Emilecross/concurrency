@@ -21,6 +21,9 @@ data_item_t * item_buffer[BUFFER_SIZE+1];
 
 volatile int head, tail;
 
+struct semaphore *filled;
+struct semaphore *empty;
+struct semaphore *mtx;
 
 /* consumer_receive() is called by a consumer to request more data. It
    should block on a sync primitive if no data is available in your
@@ -30,13 +33,12 @@ data_item_t * consumer_receive(void)
 {
         data_item_t * item;
 
-
-        while(head == tail) {
-                /* busy wait */
-        }
+        P(filled);
+        P(mtx);
         item = item_buffer[tail];
         tail = (tail + 1) % BUFFLEN;
-
+        V(mtx);
+        V(empty);
         
         /******************
          * Remove above here
@@ -51,11 +53,12 @@ data_item_t * consumer_receive(void)
 
 void producer_send(data_item_t *item)
 {
-        while((head + 1) % BUFFLEN == tail) {
-                /* busy wait */
-        }
+        P(empty);
+        P(mtx);
         item_buffer[head] = item;
         head = (head + 1) % BUFFLEN;
+        V(mtx);
+        V(filled);
 }
 
 
@@ -66,12 +69,19 @@ void producer_send(data_item_t *item)
 
 void producerconsumer_startup(void)
 {
+        filled = sem_create("filled", 0);
+        empty = sem_create("empty", BUFFER_SIZE);
+        mtx = sem_create("mtx", 1);
+        P(mtx);
         head = tail = 0;
-
+        V(mtx);
 }
 
 /* Perform any clean-up you need here */
 void producerconsumer_shutdown(void)
 {
+        sem_destroy(filled);
+        sem_destroy(empty);
+        sem_destroy(mtx);
 }
 
